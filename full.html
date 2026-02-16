@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Reward Engine Console (Mockup)</title>
+  <style>
+    :root{
+      --bg:#0b1220; --panel:#111827; --line:#334155; --text:#e5e7eb; --muted:#94a3b8;
+      --green:#22c55e; --blue:#3b82f6; --amber:#f59e0b; --red:#ef4444;
+    }
+    *{box-sizing:border-box}
+    body{margin:0;background:linear-gradient(180deg,#0a1020,#0f172a);color:var(--text);font-family:Inter,system-ui,Segoe UI,Arial,sans-serif}
+    .wrap{max-width:1150px;margin:18px auto;padding:0 12px}
+    .card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px}
+    .title{font-size:22px;font-weight:800}
+    .sub{color:var(--muted);font-size:13px;margin-top:4px}
+    .grid{display:grid;grid-template-columns:1.1fr .9fr;gap:12px;margin-top:12px}
+    .kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:10px}
+    .kpi{background:#0b1220;border:1px solid var(--line);border-radius:10px;padding:10px}
+    .kpi .v{font-size:22px;font-weight:800}
+    .good{color:var(--green)} .warn{color:var(--amber)} .bad{color:var(--red)} .blue{color:var(--blue)}
+    .row{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
+    .badge{padding:4px 8px;border-radius:999px;font-size:12px;border:1px solid var(--line);background:#0b1220;color:var(--muted)}
+    .layout{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:12px}
+    .section-title{font-size:14px;font-weight:700;margin-bottom:8px}
+    label{font-size:12px;color:var(--muted)}
+    input[type=range]{width:100%}
+    .control{background:#0b1220;border:1px solid var(--line);border-radius:10px;padding:10px;margin-bottom:8px}
+    table{width:100%;border-collapse:collapse;font-size:12px}
+    th,td{padding:6px;border-bottom:1px solid #1f2937;text-align:left}
+    button{background:#0b1220;color:var(--text);border:1px solid #475569;border-radius:8px;padding:8px 10px;cursor:pointer}
+    button:hover{border-color:#64748b}
+    .footer{margin-top:10px;font-size:12px;color:var(--muted)}
+    .bar{height:10px;background:#1f2937;border-radius:999px;overflow:hidden}
+    .fill{height:100%;background:var(--blue)}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="card">
+      <div class="row">
+        <div>
+          <div class="title">Reward Engine Console (Customer Mockup)</div>
+          <div class="sub">Value view: turn raw model signals into higher-quality, lower-drawdown action decisions.</div>
+        </div>
+        <div class="badge">Demo dataset: QQQ / AAPL / MSFT (simulated)</div>
+      </div>
+      <div class="kpis">
+        <div class="kpi"><div>Projected Annual Return</div><div id="k_ret" class="v good">18.2%</div></div>
+        <div class="kpi"><div>Sharpe</div><div id="k_sharpe" class="v blue">1.22</div></div>
+        <div class="kpi"><div>Max Drawdown</div><div id="k_dd" class="v warn">-9.6%</div></div>
+        <div class="kpi"><div>Client ROI Signal</div><div id="k_roi" class="v good">Strong</div></div>
+      </div>
+    </div>
+
+    <div class="grid">
+      <div class="card">
+        <div class="section-title">User outcome summary</div>
+        <table>
+          <thead><tr><th>Metric</th><th>Current baseline</th><th>With Reward Engine</th><th>Impact</th></tr></thead>
+          <tbody id="impactTable"></tbody>
+        </table>
+        <div class="footer">So what: this layer improves action quality, reduces tail-risk, and gives clearer governance for trading decisions.</div>
+      </div>
+
+      <div class="card">
+        <div class="section-title">Simple controls (what customer tweaks)</div>
+        <div class="control">
+          <label>Risk discipline (Drawdown Penalty): <span id="v_ddw">0.40</span></label>
+          <input id="ddw" type="range" min="0.1" max="1.2" step="0.05" value="0.40" />
+        </div>
+        <div class="control">
+          <label>Alpha focus (Alpha Bonus): <span id="v_alpha">0.10</span></label>
+          <input id="alpha" type="range" min="0" max="0.5" step="0.01" value="0.10" />
+        </div>
+        <div class="control">
+          <label>Tail-risk guard (CVaR Penalty): <span id="v_cvar">0.20</span></label>
+          <input id="cvar" type="range" min="0" max="0.6" step="0.02" value="0.20" />
+        </div>
+        <div class="row">
+          <button id="btnConservative">Conservative preset</button>
+          <button id="btnBalanced">Balanced preset</button>
+          <button id="btnGrowth">Growth preset</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="layout">
+      <div class="card">
+        <div class="section-title">Revenue potential (licensing model)</div>
+        <table>
+          <thead><tr><th>Tier</th><th>Clients</th><th>Price / month</th><th>MRR</th></tr></thead>
+          <tbody id="revTable"></tbody>
+        </table>
+        <div class="footer"><b>Total MRR:</b> <span id="totalMRR">$0</span> · <b>ARR:</b> <span id="totalARR">$0</span></div>
+      </div>
+
+      <div class="card">
+        <div class="section-title">Adoption funnel (mock data)</div>
+        <div id="funnel"></div>
+        <div class="footer">Why it matters: no 1:1 sales needed when activation + retention are productized and agent-assisted.</div>
+      </div>
+    </div>
+  </div>
+
+<script>
+(() => {
+  const baseline = {
+    ret: 0.124,
+    sharpe: 0.86,
+    dd: -0.162,
+    turnover: 0.74,
+    win: 0.49
+  };
+
+  const tiers = [
+    {name:'Starter', clients:26, price:2000},
+    {name:'Growth', clients:9, price:6000},
+    {name:'Enterprise', clients:3, price:12000}
+  ];
+
+  const funnel = [
+    {name:'Monthly visitors', value:12000},
+    {name:'Trials started', value:1700},
+    {name:'Activated', value:620},
+    {name:'Paying', value:38}
+  ];
+
+  const el = (id)=>document.getElementById(id);
+  const ddw = el('ddw'), alpha = el('alpha'), cvar = el('cvar');
+
+  function fmtPct(v){ return (v*100).toFixed(1)+'%'; }
+  function fmtNum(v){ return v.toFixed(2); }
+
+  function model(){
+    const d = Number(ddw.value), a = Number(alpha.value), c = Number(cvar.value);
+
+    // Simple realistic mock relationships
+    let ret = baseline.ret + 0.06*a - 0.03*c - 0.02*(d-0.4);
+    let sharpe = baseline.sharpe + 0.9*a + 0.35*d - 0.45*c;
+    let drawdown = baseline.dd + 0.08*(d-0.4) - 0.09*c + 0.02*a; // less negative is better
+
+    ret = Math.max(-0.05, Math.min(0.32, ret));
+    sharpe = Math.max(-0.5, Math.min(2.2, sharpe));
+    drawdown = Math.max(-0.35, Math.min(-0.03, drawdown));
+
+    return {ret, sharpe, drawdown};
+  }
+
+  function renderImpact(m){
+    const table = el('impactTable');
+    const rows = [
+      ['Annualized Return', fmtPct(baseline.ret), fmtPct(m.ret), fmtPct(m.ret-baseline.ret)],
+      ['Sharpe', fmtNum(baseline.sharpe), fmtNum(m.sharpe), (m.sharpe-baseline.sharpe).toFixed(2)],
+      ['Max Drawdown', fmtPct(baseline.dd), fmtPct(m.drawdown), fmtPct(m.drawdown-baseline.dd)],
+      ['Turnover', '0.74', '0.62', '-0.12'],
+      ['Win-rate', '49.0%', '54.0%', '+5.0%']
+    ];
+    table.innerHTML = rows.map(r=>`<tr><td>${r[0]}</td><td>${r[1]}</td><td><b>${r[2]}</b></td><td>${r[3]}</td></tr>`).join('');
+
+    el('k_ret').textContent = fmtPct(m.ret);
+    el('k_sharpe').textContent = fmtNum(m.sharpe);
+    el('k_dd').textContent = fmtPct(m.drawdown);
+
+    const strong = (m.ret>0.16 && m.sharpe>1.0 && m.drawdown>-0.14);
+    el('k_roi').textContent = strong ? 'Strong' : 'Moderate';
+    el('k_roi').className = 'v ' + (strong ? 'good':'warn');
+  }
+
+  function renderRevenue(){
+    const body = el('revTable');
+    let mrr = 0;
+    body.innerHTML = tiers.map(t=>{
+      const v = t.clients*t.price; mrr += v;
+      return `<tr><td>${t.name}</td><td>${t.clients}</td><td>$${t.price.toLocaleString()}</td><td>$${v.toLocaleString()}</td></tr>`;
+    }).join('');
+    el('totalMRR').textContent = '$'+mrr.toLocaleString();
+    el('totalARR').textContent = '$'+(mrr*12).toLocaleString();
+  }
+
+  function renderFunnel(){
+    const f = el('funnel');
+    const max = funnel[0].value;
+    f.innerHTML = funnel.map(x=>{
+      const w = Math.max(8, Math.round((x.value/max)*100));
+      return `<div style="margin-bottom:8px"><div class="row"><span>${x.name}</span><span>${x.value.toLocaleString()}</span></div><div class="bar"><div class="fill" style="width:${w}%"></div></div></div>`;
+    }).join('');
+  }
+
+  function syncLabels(){
+    el('v_ddw').textContent = Number(ddw.value).toFixed(2);
+    el('v_alpha').textContent = Number(alpha.value).toFixed(2);
+    el('v_cvar').textContent = Number(cvar.value).toFixed(2);
+  }
+
+  function refresh(){
+    syncLabels();
+    renderImpact(model());
+    renderRevenue();
+    renderFunnel();
+  }
+
+  [ddw,alpha,cvar].forEach(i=>i.addEventListener('input', refresh));
+
+  el('btnConservative').addEventListener('click',()=>{ ddw.value=0.75; alpha.value=0.06; cvar.value=0.35; refresh(); });
+  el('btnBalanced').addEventListener('click',()=>{ ddw.value=0.40; alpha.value=0.10; cvar.value=0.20; refresh(); });
+  el('btnGrowth').addEventListener('click',()=>{ ddw.value=0.25; alpha.value=0.22; cvar.value=0.10; refresh(); });
+
+  refresh();
+})();
+</script>
+</body>
+</html>

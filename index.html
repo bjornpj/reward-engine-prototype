@@ -1,0 +1,205 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Smart Trading Assistant — Simple Mockup</title>
+  <style>
+    :root{
+      --bg:#0f172a; --panel:#111827; --line:#334155; --text:#e5e7eb; --muted:#94a3b8;
+      --good:#22c55e; --warn:#f59e0b; --bad:#ef4444; --blue:#3b82f6;
+    }
+    *{box-sizing:border-box}
+    body{margin:0;background:linear-gradient(180deg,#0b1220,#0f172a);color:var(--text);font-family:Inter,system-ui,Arial,sans-serif}
+    .wrap{max-width:1080px;margin:18px auto;padding:0 12px}
+    .card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px}
+    .title{font-size:24px;font-weight:800}
+    .sub{color:var(--muted);font-size:14px;margin-top:6px}
+    .kpis{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:10px}
+    .kpi{background:#0b1220;border:1px solid var(--line);border-radius:10px;padding:12px}
+    .kpi .v{font-size:24px;font-weight:800}
+    .grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:12px}
+
+    /* Responsive rendering */
+    @media (max-width: 980px){
+      .kpis{grid-template-columns:1fr 1fr}
+      .grid{grid-template-columns:1fr}
+    }
+    @media (max-width: 640px){
+      .wrap{margin:10px auto;padding:0 8px}
+      .card{padding:10px}
+      .title{font-size:20px}
+      .sub{font-size:13px}
+      .kpis{grid-template-columns:1fr}
+      .kpi .v{font-size:22px}
+      table{font-size:12px}
+      th,td{padding:6px}
+      button{width:100%}
+    }
+    .section{font-size:15px;font-weight:700;margin-bottom:8px}
+    .control{background:#0b1220;border:1px solid var(--line);border-radius:10px;padding:10px;margin-bottom:8px}
+    label{font-size:13px;color:var(--muted)}
+    input[type=range]{width:100%}
+    button{background:#0b1220;color:var(--text);border:1px solid #475569;border-radius:8px;padding:8px 10px;cursor:pointer}
+    button:hover{border-color:#64748b}
+    table{width:100%;border-collapse:collapse;font-size:13px}
+    th,td{padding:7px;border-bottom:1px solid #1f2937;text-align:left}
+    .pill{display:inline-block;padding:4px 8px;border-radius:999px;border:1px solid var(--line);font-size:12px;color:var(--muted)}
+    .good{color:var(--good)} .warn{color:var(--warn)} .bad{color:var(--bad)} .blue{color:var(--blue)}
+    .footer{margin-top:10px;color:var(--muted);font-size:12px}
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <div class="card">
+    <div class="title">Smart Trading Assistant (Simple User View)</div>
+    <div class="sub">Goal: help you make steadier decisions, lower big losses, and improve monthly outcomes — without financial jargon.</div>
+
+    <div class="kpis">
+      <div class="kpi">
+        <div>Expected yearly growth</div>
+        <div id="kGrowth" class="v good">+14.8%</div>
+      </div>
+      <div class="kpi">
+        <div>Big-loss protection</div>
+        <div id="kProtection" class="v blue">Good</div>
+      </div>
+      <div class="kpi">
+        <div>Decision quality</div>
+        <div id="kQuality" class="v good">Improving</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="grid">
+    <div class="card">
+      <div class="section">Simple settings</div>
+      <div class="control">
+        <label>Caution level: <b id="vCaution">Medium</b></label>
+        <input id="caution" type="range" min="1" max="3" step="1" value="2" />
+      </div>
+      <div class="control">
+        <label>Growth focus: <b id="vGrowth">Balanced</b></label>
+        <input id="growth" type="range" min="1" max="3" step="1" value="2" />
+      </div>
+      <div class="control">
+        <label>Auto-protection strength: <b id="vProtect">On</b></label>
+        <input id="protect" type="range" min="1" max="3" step="1" value="2" />
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px">
+        <button id="safeBtn">Safe mode</button>
+        <button id="balancedBtn">Balanced mode</button>
+        <button id="growthBtn">Growth mode</button>
+      </div>
+      <div class="footer"><span class="pill">No finance jargon mode</span></div>
+    </div>
+
+    <div class="card">
+      <div class="section">What value you get</div>
+      <table>
+        <thead><tr><th>Before</th><th>After</th><th>Why it helps</th></tr></thead>
+        <tbody id="valueTable"></tbody>
+      </table>
+      <div class="footer">Simple summary: fewer bad entries, better timing, and more consistent results.</div>
+    </div>
+  </div>
+
+  <div class="grid">
+    <div class="card">
+      <div class="section">Example monthly impact (mock data)</div>
+      <table>
+        <thead><tr><th>Metric</th><th>Current</th><th>With assistant</th></tr></thead>
+        <tbody id="impactRows"></tbody>
+      </table>
+    </div>
+
+    <div class="card">
+      <div class="section">Business view (for licensing buyers)</div>
+      <table>
+        <thead><tr><th>Plan</th><th>Customers</th><th>Monthly price</th><th>Monthly revenue</th></tr></thead>
+        <tbody id="revRows"></tbody>
+      </table>
+      <div class="footer"><b>Total monthly revenue:</b> <span id="totalMrr"></span></div>
+    </div>
+  </div>
+</div>
+
+<script>
+(() => {
+  const caution = document.getElementById('caution');
+  const growth = document.getElementById('growth');
+  const protect = document.getElementById('protect');
+
+  const tiers = [
+    {name:'Starter', customers:22, price:1800},
+    {name:'Growth', customers:10, price:5500},
+    {name:'Enterprise', customers:4, price:10000}
+  ];
+
+  function label3(v, a,b,c){ return [a,b,c][v-1]; }
+
+  function calc(){
+    const c = Number(caution.value);
+    const g = Number(growth.value);
+    const p = Number(protect.value);
+
+    // user-friendly model outputs
+    let yearlyGrowth = 0.10 + 0.04*(g-2) - 0.015*(c-2) - 0.01*(p-2);
+    let worstDrop = -0.16 + 0.03*(c-2) + 0.04*(p-2) - 0.02*(g-2); // less negative is better
+    let qualityScore = 64 + 7*(g-2) + 6*(p-2) + 4*(c-2);
+
+    yearlyGrowth = Math.max(0.02, Math.min(0.28, yearlyGrowth));
+    worstDrop = Math.max(-0.30, Math.min(-0.04, worstDrop));
+    qualityScore = Math.max(45, Math.min(92, qualityScore));
+
+    return {yearlyGrowth, worstDrop, qualityScore};
+  }
+
+  function render(){
+    const m = calc();
+
+    document.getElementById('vCaution').textContent = label3(Number(caution.value),'Low','Medium','High');
+    document.getElementById('vGrowth').textContent = label3(Number(growth.value),'Conservative','Balanced','Aggressive');
+    document.getElementById('vProtect').textContent = label3(Number(protect.value),'Light','On','Strong');
+
+    document.getElementById('kGrowth').textContent = `+${(m.yearlyGrowth*100).toFixed(1)}%`;
+
+    const protectionText = m.worstDrop > -0.10 ? 'Strong' : (m.worstDrop > -0.16 ? 'Good' : 'Weak');
+    document.getElementById('kProtection').textContent = protectionText;
+
+    const qualityText = m.qualityScore >= 78 ? 'Strong' : (m.qualityScore >= 65 ? 'Improving' : 'Needs tuning');
+    document.getElementById('kQuality').textContent = qualityText;
+
+    const valueRows = [
+      ['Late reactions to market changes','Faster guided decisions','Saves time and reduces hesitation'],
+      ['More exposure to big down days',`${Math.abs(m.worstDrop*100).toFixed(1)}% worst-drop estimate`,'Helps limit painful drawdowns'],
+      ['Inconsistent trade quality',`Quality score: ${m.qualityScore}/100`,'Improves repeatability'],
+    ];
+    document.getElementById('valueTable').innerHTML = valueRows.map(r=>`<tr><td>${r[0]}</td><td><b>${r[1]}</b></td><td>${r[2]}</td></tr>`).join('');
+
+    const impact = [
+      ['Expected yearly growth', '10.5%', `${(m.yearlyGrowth*100).toFixed(1)}%`],
+      ['Worst month estimate', '-7.9%', `${(m.worstDrop*100/2).toFixed(1)}%`],
+      ['Big-loss protection', 'Basic', protectionText],
+      ['Decision quality score', '61/100', `${m.qualityScore}/100`],
+    ];
+    document.getElementById('impactRows').innerHTML = impact.map(r=>`<tr><td>${r[0]}</td><td>${r[1]}</td><td><b>${r[2]}</b></td></tr>`).join('');
+
+    let mrr = 0;
+    document.getElementById('revRows').innerHTML = tiers.map(t=>{
+      const rev=t.customers*t.price; mrr+=rev;
+      return `<tr><td>${t.name}</td><td>${t.customers}</td><td>$${t.price.toLocaleString()}</td><td>$${rev.toLocaleString()}</td></tr>`;
+    }).join('');
+    document.getElementById('totalMrr').textContent = '$'+mrr.toLocaleString();
+  }
+
+  document.getElementById('safeBtn').onclick = ()=>{ caution.value=3; growth.value=1; protect.value=3; render(); };
+  document.getElementById('balancedBtn').onclick = ()=>{ caution.value=2; growth.value=2; protect.value=2; render(); };
+  document.getElementById('growthBtn').onclick = ()=>{ caution.value=1; growth.value=3; protect.value=1; render(); };
+
+  [caution,growth,protect].forEach(x=>x.addEventListener('input', render));
+  render();
+})();
+</script>
+</body>
+</html>
