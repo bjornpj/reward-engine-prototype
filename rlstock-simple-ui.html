@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Stock Signal Assistant — Simple Preview</title>
+  <style>
+    body{font-family:Inter,system-ui,Arial,sans-serif;background:#f6f8fb;color:#122036;margin:0}
+    .wrap{max-width:980px;margin:0 auto;padding:28px}
+    .card{background:#fff;border:1px solid #e5e9f2;border-radius:16px;padding:18px;box-shadow:0 4px 18px rgba(17,24,39,.05)}
+    h1{font-size:28px;margin:0 0 8px} p{color:#44506a}
+    .row{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+    .metric{padding:14px;border-radius:12px;background:#f3f7ff;border:1px solid #d8e4ff}
+    .good{color:#0b7a3d}.warn{color:#9a5b00}.bad{color:#9a1a1a}
+    .btn{display:inline-block;padding:10px 14px;border-radius:10px;background:#1147d9;color:#fff;text-decoration:none;font-weight:600}
+    .small{font-size:13px;color:#5d6a84}
+    @media(max-width:760px){.row{grid-template-columns:1fr}}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="card">
+      <h1>Stock Signal Assistant (Non-Financial Preview)</h1>
+      <p>This prototype translates complex market data into plain-language guidance for everyday users.</p>
+      <div class="row">
+        <div class="metric">
+          <div class="small">Today’s Confidence</div>
+          <h2 class="good" id="confidence">74 / 100</h2>
+          <div class="small">Meaning: model sees more upside than downside in the near term.</div>
+        </div>
+        <div class="metric">
+          <div class="small">Risk Level</div>
+          <h2 class="warn" id="risk">Medium</h2>
+          <div class="small">Meaning: market can swing; avoid oversized positions.</div>
+        </div>
+      </div>
+
+      <div class="row" style="margin-top:14px">
+        <div class="metric">
+          <div class="small">Plain-language suggestion</div>
+          <p id="suggestion"><b>Wait for confirmation.</b> If confidence rises above 78 with low risk, consider a small starter position.</p>
+        </div>
+        <div class="metric">
+          <div class="small">What changed?</div>
+          <ul>
+            <li>Momentum improved in last 5 sessions</li>
+            <li>Volatility remains elevated</li>
+            <li>Breadth is neutral</li>
+          </ul>
+        </div>
+      </div>
+
+      <p class="small">For pilot users: this is educational support, not financial advice.</p>
+      <a class="btn" href="#" onclick="randomize();return false;">Simulate New Market Snapshot</a>
+    </div>
+  </div>
+
+  <script>
+    function randomize(){
+      const c = Math.floor(55 + Math.random()*35);
+      document.getElementById('confidence').textContent = c + ' / 100';
+      const risk = c>78 ? 'Low' : c>66 ? 'Medium' : 'High';
+      const riskEl = document.getElementById('risk');
+      riskEl.textContent = risk;
+      riskEl.className = risk==='Low' ? 'good' : risk==='Medium' ? 'warn' : 'bad';
+      const t = c>78 ? 'Signal is strong. Consider phased entry and keep stop-loss discipline.' : c>66 ? 'Mixed conditions. Consider waiting for trend confirmation.' : 'Weak setup. Preserve capital and stay defensive.';
+      document.getElementById('suggestion').innerHTML = '<b>' + (c>78?'Favorable setup.':c>66?'Neutral setup.':'Defensive setup.') + '</b> ' + t;
+    }
+  </script>
+</body>
+</html>
