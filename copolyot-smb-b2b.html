@@ -1,0 +1,116 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>CoPilot SMB B2B — Prototype</title>
+  <style>
+    :root{--bg:#0b1220;--card:#121c30;--muted:#8ea0c0;--text:#eef4ff;--accent:#5aa6ff;--ok:#36c98a;--warn:#ffc857}
+    *{box-sizing:border-box} body{margin:0;font-family:Inter,system-ui,Arial;background:linear-gradient(160deg,#0b1220,#0f1a2f);color:var(--text)}
+    .wrap{max-width:1080px;margin:0 auto;padding:28px}
+    .hero{display:flex;gap:18px;align-items:center;justify-content:space-between;flex-wrap:wrap}
+    .title{font-size:34px;font-weight:800;margin:0}
+    .sub{color:var(--muted);margin:8px 0 0;max-width:700px}
+    .badge{background:#20385d;border:1px solid #35588a;color:#cde1ff;padding:6px 10px;border-radius:999px;font-size:12px}
+    .grid{display:grid;grid-template-columns:1.2fr .8fr;gap:16px;margin-top:18px}
+    .card{background:rgba(18,28,48,.95);border:1px solid #1d2a46;border-radius:16px;padding:16px;box-shadow:0 8px 24px rgba(0,0,0,.25)}
+    .h{font-size:16px;font-weight:700;margin:0 0 10px;color:#d7e7ff}
+    .row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+    .kpi{background:#0f1729;border:1px solid #223252;border-radius:12px;padding:12px}
+    .k{font-size:12px;color:var(--muted)} .v{font-size:24px;font-weight:800;margin-top:4px}
+    .good{color:var(--ok)} .warn{color:var(--warn)}
+    input,select,button,textarea{width:100%;padding:10px 11px;border-radius:10px;border:1px solid #2b4068;background:#0f1729;color:var(--text)}
+    button{background:linear-gradient(90deg,#2f7cf5,#4ca8ff);border:none;font-weight:700;cursor:pointer}
+    .out{background:#0d1628;border:1px dashed #2f4e80;padding:12px;border-radius:12px;color:#d8e7ff;white-space:pre-wrap}
+    ul{margin:8px 0 0 18px;color:#c5d7f7}
+    .tiny{font-size:12px;color:#8ea0c0}
+    @media(max-width:860px){.grid,.row{grid-template-columns:1fr}}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="hero">
+      <div>
+        <div class="badge">Prototype • CoPilot SMB B2B</div>
+        <h1 class="title">AI Revenue CoPilot for SMB B2B Teams</h1>
+        <p class="sub">A non-technical control panel that finds prospects, drafts outreach, schedules follow-ups, and updates CRM automatically.</p>
+      </div>
+    </div>
+
+    <div class="grid">
+      <div class="card">
+        <h3 class="h">Live Operations Dashboard</h3>
+        <div class="row">
+          <div class="kpi"><div class="k">Qualified leads this week</div><div class="v" id="k1">126</div></div>
+          <div class="kpi"><div class="k">Meetings booked</div><div class="v good" id="k2">18</div></div>
+          <div class="kpi"><div class="k">Reply rate</div><div class="v" id="k3">11.8%</div></div>
+          <div class="kpi"><div class="k">Pipeline influenced</div><div class="v warn" id="k4">$94k</div></div>
+        </div>
+        <p class="tiny" style="margin-top:10px">Plain-language recommendation: continue campaign B, pause campaign C, and increase follow-up cadence for leads in “Operations” persona.</p>
+      </div>
+
+      <div class="card">
+        <h3 class="h">Quick Setup (for non-financial users)</h3>
+        <label>Industry focus</label>
+        <select id="industry"><option>SaaS Services</option><option>IT Managed Services</option><option>Business Consulting</option></select>
+        <label style="margin-top:8px;display:block">Target company size</label>
+        <select id="size"><option>10-50 employees</option><option>51-200 employees</option><option>201-500 employees</option></select>
+        <label style="margin-top:8px;display:block">Monthly outreach limit</label>
+        <input id="limit" type="number" value="1200" min="100" max="10000" />
+        <button style="margin-top:10px" onclick="simulate()">Run CoPilot Plan</button>
+      </div>
+    </div>
+
+    <div class="grid" style="margin-top:16px">
+      <div class="card">
+        <h3 class="h">Auto-Generated Action Plan</h3>
+        <div id="plan" class="out">Click “Run CoPilot Plan” to generate a campaign plan.</div>
+      </div>
+      <div class="card">
+        <h3 class="h">What gets automated</h3>
+        <ul>
+          <li>Lead sourcing from target segments</li>
+          <li>Email + LinkedIn sequence drafting</li>
+          <li>Follow-up timing optimization</li>
+          <li>Call notes → CRM field updates</li>
+          <li>Weekly executive summary</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    function randint(a,b){return Math.floor(a+Math.random()*(b-a+1));}
+    function simulate(){
+      const industry=document.getElementById('industry').value;
+      const size=document.getElementById('size').value;
+      const limit=Number(document.getElementById('limit').value||1200);
+
+      const leads=randint(Math.floor(limit*0.08),Math.floor(limit*0.16));
+      const meetings=randint(Math.max(5,Math.floor(leads*0.1)),Math.max(8,Math.floor(leads*0.2)));
+      const reply=(Math.random()*8+7).toFixed(1);
+      const pipe=randint(meetings*3000, meetings*9000);
+
+      document.getElementById('k1').textContent=leads;
+      document.getElementById('k2').textContent=meetings;
+      document.getElementById('k3').textContent=reply+'%';
+      document.getElementById('k4').textContent='$'+pipe.toLocaleString();
+
+      const txt =
+`Go-to-market plan for ${industry} (${size})
+
+1) Build 3 micro-lists (decision-makers, influencers, ops champions).
+2) Launch 2 outreach sequences with different hooks (ROI-led and pain-led).
+3) Set follow-ups on day 2, 5, and 9 for non-responders.
+4) Prioritize warm replies for same-day booking.
+5) Weekly optimization loop:
+   - keep subject lines with highest response,
+   - reduce low-performing personas,
+   - increase outreach to top-converting segment.
+
+Expected weekly output (simulation): ${leads} qualified leads, ${meetings} meetings, ~$${pipe.toLocaleString()} pipeline influenced.`;
+      document.getElementById('plan').textContent=txt;
+    }
+  </script>
+</body>
+</html>
