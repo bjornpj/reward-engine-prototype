@@ -80,6 +80,12 @@
       </div>
       <div>Tip: if tilt fails in Telegram webview, open in Chrome and allow Motion sensors.</div>
     </div>
+    <div class="controls" style="margin-top:10px; justify-content:center;">
+      <div style="display:flex; gap:10px; width:min(420px,100%);">
+        <button id="bottomLeftBtn" style="flex:1; padding:12px 10px; font-size:16px;">◀ Left</button>
+        <button id="bottomRightBtn" style="flex:1; padding:12px 10px; font-size:16px;">Right ▶</button>
+      </div>
+    </div>
   </div>
 
   <script>
@@ -100,6 +106,8 @@
       const leftBtn = document.getElementById('leftBtn');
       const downBtn = document.getElementById('downBtn');
       const rightBtn = document.getElementById('rightBtn');
+      const bottomLeftBtn = document.getElementById('bottomLeftBtn');
+      const bottomRightBtn = document.getElementById('bottomRightBtn');
 
       const size = 21;
       const cell = canvas.width / size;
@@ -337,6 +345,8 @@
       leftBtn.addEventListener('click', () => turn(-1, 0));
       downBtn.addEventListener('click', () => turn(0, 1));
       rightBtn.addEventListener('click', () => turn(1, 0));
+      bottomLeftBtn.addEventListener('click', () => turn(-1, 0));
+      bottomRightBtn.addEventListener('click', () => turn(1, 0));
       pauseBtn.addEventListener('click', () => {
         if (dead) return;
         running = !running;
