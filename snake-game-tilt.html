@@ -70,6 +70,16 @@
       <div>Fallback: Arrow keys / WASD</div>
     </div>
     <div class="status" id="tiltStatus">Tilt: not enabled</div>
+    <div class="status" id="tiltDebug">β: --, γ: --</div>
+    <div class="controls" style="margin-top:8px">
+      <div>
+        <button id="upBtn">↑</button>
+        <button id="leftBtn">←</button>
+        <button id="downBtn">↓</button>
+        <button id="rightBtn">→</button>
+      </div>
+      <div>Tip: if tilt fails in Telegram webview, open in Chrome and allow Motion sensors.</div>
+    </div>
   </div>
 
   <script>
@@ -85,6 +95,11 @@
       const enableTiltBtn = document.getElementById('enableTilt');
       const calibrateBtn = document.getElementById('calibrate');
       const tiltStatus = document.getElementById('tiltStatus');
+      const tiltDebug = document.getElementById('tiltDebug');
+      const upBtn = document.getElementById('upBtn');
+      const leftBtn = document.getElementById('leftBtn');
+      const downBtn = document.getElementById('downBtn');
+      const rightBtn = document.getElementById('rightBtn');
 
       const size = 21;
       const cell = canvas.width / size;
@@ -184,6 +199,7 @@
         if (typeof e.beta !== 'number' || typeof e.gamma !== 'number') return;
         lastBeta = e.beta;
         lastGamma = e.gamma;
+        tiltDebug.textContent = `β: ${lastBeta.toFixed(1)}, γ: ${lastGamma.toFixed(1)}`;
         handleTilt(e.beta, e.gamma);
       }
 
@@ -198,6 +214,7 @@
         const gamma = (acc.x || 0) * 6;
         lastBeta = beta;
         lastGamma = gamma;
+        tiltDebug.textContent = `β: ${lastBeta.toFixed(1)}, γ: ${lastGamma.toFixed(1)} (motion)`;
         handleTilt(beta, gamma);
       }
 
@@ -316,6 +333,10 @@
       enableTiltBtn.addEventListener('click', enableTilt);
       calibrateBtn.addEventListener('click', calibrate);
       restartBtn.addEventListener('click', reset);
+      upBtn.addEventListener('click', () => turn(0, -1));
+      leftBtn.addEventListener('click', () => turn(-1, 0));
+      downBtn.addEventListener('click', () => turn(0, 1));
+      rightBtn.addEventListener('click', () => turn(1, 0));
       pauseBtn.addEventListener('click', () => {
         if (dead) return;
         running = !running;
