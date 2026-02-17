@@ -71,21 +71,13 @@
     </div>
     <div class="status" id="tiltStatus">Tilt: not enabled</div>
     <div class="status" id="tiltDebug">β: --, γ: --</div>
-    <div class="controls" style="margin-top:8px">
-      <div>
-        <button id="upBtn">↑</button>
-        <button id="leftBtn">←</button>
-        <button id="downBtn">↓</button>
-        <button id="rightBtn">→</button>
-      </div>
-      <div>Tip: if tilt fails in Telegram webview, open in Chrome and allow Motion sensors.</div>
-    </div>
     <div class="controls" style="margin-top:10px; justify-content:center;">
       <div style="display:flex; gap:10px; width:min(420px,100%);">
-        <button id="bottomLeftBtn" style="flex:1; padding:12px 10px; font-size:16px;">◀ Left</button>
-        <button id="bottomRightBtn" style="flex:1; padding:12px 10px; font-size:16px;">Right ▶</button>
+        <button id="turnLeftBtn" style="flex:1; padding:12px 10px; font-size:16px;">◀ Turn Left</button>
+        <button id="turnRightBtn" style="flex:1; padding:12px 10px; font-size:16px;">Turn Right ▶</button>
       </div>
     </div>
+    <div class="status">Tip: if tilt fails in Telegram webview, open in Chrome and allow Motion sensors.</div>
   </div>
 
   <script>
@@ -102,12 +94,8 @@
       const calibrateBtn = document.getElementById('calibrate');
       const tiltStatus = document.getElementById('tiltStatus');
       const tiltDebug = document.getElementById('tiltDebug');
-      const upBtn = document.getElementById('upBtn');
-      const leftBtn = document.getElementById('leftBtn');
-      const downBtn = document.getElementById('downBtn');
-      const rightBtn = document.getElementById('rightBtn');
-      const bottomLeftBtn = document.getElementById('bottomLeftBtn');
-      const bottomRightBtn = document.getElementById('bottomRightBtn');
+      const turnLeftBtn = document.getElementById('turnLeftBtn');
+      const turnRightBtn = document.getElementById('turnRightBtn');
 
       const size = 21;
       const cell = canvas.width / size;
@@ -170,6 +158,18 @@
       function turn(x, y) {
         if (x === -dir.x && y === -dir.y) return;
         nextDir = {x, y};
+      }
+
+      function rotateLeft() {
+        const d = nextDir || dir;
+        // (x,y) -> (-y, x)
+        turn(-d.y, d.x);
+      }
+
+      function rotateRight() {
+        const d = nextDir || dir;
+        // (x,y) -> (y, -x)
+        turn(d.y, -d.x);
       }
 
       function normalizeByScreen(beta, gamma) {
@@ -341,12 +341,8 @@
       enableTiltBtn.addEventListener('click', enableTilt);
       calibrateBtn.addEventListener('click', calibrate);
       restartBtn.addEventListener('click', reset);
-      upBtn.addEventListener('click', () => turn(0, -1));
-      leftBtn.addEventListener('click', () => turn(-1, 0));
-      downBtn.addEventListener('click', () => turn(0, 1));
-      rightBtn.addEventListener('click', () => turn(1, 0));
-      bottomLeftBtn.addEventListener('click', () => turn(-1, 0));
-      bottomRightBtn.addEventListener('click', () => turn(1, 0));
+      turnLeftBtn.addEventListener('click', rotateLeft);
+      turnRightBtn.addEventListener('click', rotateRight);
       pauseBtn.addEventListener('click', () => {
         if (dead) return;
         running = !running;
