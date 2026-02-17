@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Arcade Tilt: Snake + Pacman</title>
+  <style>
+    :root { --bg:#0f172a; --panel:#111827; --text:#e5e7eb; --danger:#ef4444; }
+    * { box-sizing: border-box; }
+    body { margin:0; min-height:100vh; display:grid; place-items:center; background:radial-gradient(circle at top,#1e293b,var(--bg)); color:var(--text); font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif; }
+    .wrap { width:min(94vw,560px); background:#0f172acc; border:1px solid #334155; border-radius:14px; padding:14px; }
+    .hud{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:10px;font-size:14px}
+    .pill{background:#0b1220;border:1px solid #334155;border-radius:999px;padding:6px 10px}
+    canvas{width:100%;aspect-ratio:1/1;display:block;background:#020617;border:1px solid #334155;border-radius:10px;image-rendering:pixelated;touch-action:none}
+    .controls{margin-top:10px;display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap}
+    button,select{background:#0b1220;color:var(--text);border:1px solid #334155;border-radius:8px;padding:10px 12px;cursor:pointer}
+    .gameover{color:var(--danger);font-weight:700;display:none}
+    .status{font-size:12px;color:#cbd5e1;margin-top:8px}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="hud">
+      <div class="pill">Game: <strong id="gameLabel">Snake</strong></div>
+      <div class="pill">Score: <strong id="score">0</strong></div>
+      <div class="pill">High: <strong id="high">0</strong></div>
+      <span class="gameover" id="gameover">Game Over — Restart</span>
+    </div>
+
+    <canvas id="game" width="420" height="420"></canvas>
+
+    <div class="controls">
+      <div>
+        <select id="gameSelect">
+          <option value="snake">Snake</option>
+          <option value="pacman">Pacman</option>
+        </select>
+        <button id="restart">Restart</button>
+      </div>
+      <div>
+        <button id="turnLeftBtn">◀ Turn Left</button>
+        <button id="turnRightBtn">Turn Right ▶</button>
+      </div>
+    </div>
+    <div class="status" id="status">Tap left/right to steer. Toggle game mode anytime.</div>
+  </div>
+
+<script>
+(() => {
+  const canvas = document.getElementById('game');
+  const ctx = canvas.getContext('2d');
+  const scoreEl = document.getElementById('score');
+  const highEl = document.getElementById('high');
+  const gameOverEl = document.getElementById('gameover');
+  const gameLabel = document.getElementById('gameLabel');
+  const gameSelect = document.getElementById('gameSelect');
+  const restartBtn = document.getElementById('restart');
+  const leftBtn = document.getElementById('turnLeftBtn');
+  const rightBtn = document.getElementById('turnRightBtn');
+
+  const size = 21;
+  const cell = canvas.width / size;
+  let last=0, acc=0, fps=9;
+
+  let mode='snake';
+  let score=0, high=Number(localStorage.getItem('arcade_high')||0);
+  let dead=false;
+
+  // shared direction unit vectors
+  let dir={x:1,y:0}, nextDir={x:1,y:0};
+
+  // snake state
+  let snake=[], food={x:5,y:5};
+
+  // pacman state
+  let pac={x:10,y:10};
+  let ghosts=[];
+  let pellets=new Set();
+
+  function key(x,y){return `${x},${y}`}
+
+  function setHud(){scoreEl.textContent=score;highEl.textContent=high;gameLabel.textContent=mode==='snake'?'Snake':'Pacman'}
+
+  function rotateLeft(){const d=nextDir||dir; setDir(-d.y,d.x)}
+  function rotateRight(){const d=nextDir||dir; setDir(d.y,-d.x)}
+  function setDir(x,y){ if(x===-dir.x&&y===-dir.y) return; nextDir={x,y}; }
+
+  function resetSnake(){
+    snake=[{x:10,y:10},{x:9,y:10},{x:8,y:10}]; dir={x:1,y:0}; nextDir={x:1,y:0};
+    score=0; dead=false; placeFood();
+  }
+  function placeFood(){
+    while(true){
+      const x=Math.floor(Math.random()*size), y=Math.floor(Math.random()*size);
+      if(!snake.some(s=>s.x===x&&s.y===y)){ food={x,y}; return; }
+    }
+  }
+
+  function resetPacman(){
+    pac={x:10,y:10}; dir={x:1,y:0}; nextDir={x:1,y:0}; dead=false; score=0;
+    ghosts=[{x:4,y:4},{x:16,y:4},{x:4,y:16}];
+    pellets.clear();
+    for(let y=1;y<size-1;y++) for(let x=1;x<size-1;x++) pellets.add(key(x,y));
+    pellets.delete(key(pac.x,pac.y));
+  }
+
+  function reset(){
+    gameOverEl.style.display='none';
+    if(mode==='snake') resetSnake(); else resetPacman();
+    setHud();
+  }
+
+  function die(){ dead=true; gameOverEl.style.display='inline'; }
+
+  function stepSnake(){
+    if(dead) return;
+    dir=nextDir;
+    const head={x:snake[0].x+dir.x,y:snake[0].y+dir.y};
+    if(head.x<0||head.y<0||head.x>=size||head.y>=size) return die();
+    if(snake.some(s=>s.x===head.x&&s.y===head.y)) return die();
+    snake.unshift(head);
+    if(head.x===food.x&&head.y===food.y){ score++; placeFood(); }
+    else snake.pop();
+    if(score>high){high=score;localStorage.setItem('arcade_high',String(high));}
+    setHud();
+  }
+
+  function stepPacman(){
+    if(dead) return;
+    dir=nextDir;
+    pac.x=(pac.x+dir.x+size)%size;
+    pac.y=(pac.y+dir.y+size)%size;
+
+    const k=key(pac.x,pac.y);
+    if(pellets.has(k)){ pellets.delete(k); score++; }
+
+    // simple ghost movement
+    ghosts=ghosts.map(g=>{
+      const choices=[[1,0],[-1,0],[0,1],[0,-1]];
+      const [dx,dy]=choices[Math.floor(Math.random()*choices.length)];
+      return {x:(g.x+dx+size)%size,y:(g.y+dy+size)%size};
+    });
+
+    if(ghosts.some(g=>g.x===pac.x&&g.y===pac.y)) return die();
+    if(pellets.size===0){ score += 20; resetPacman(); }
+
+    if(score>high){high=score;localStorage.setItem('arcade_high',String(high));}
+    setHud();
+  }
+
+  function drawGrid(){
+    ctx.fillStyle='#020617'; ctx.fillRect(0,0,canvas.width,canvas.height);
+    ctx.strokeStyle='rgba(148,163,184,0.10)'; ctx.lineWidth=1;
+    for(let i=1;i<size;i++){const p=i*cell; ctx.beginPath();ctx.moveTo(p,0);ctx.lineTo(p,canvas.height);ctx.stroke();ctx.beginPath();ctx.moveTo(0,p);ctx.lineTo(canvas.width,p);ctx.stroke();}
+  }
+
+  function drawSnake(){
+    ctx.fillStyle='#ef4444'; ctx.fillRect(food.x*cell+3,food.y*cell+3,cell-6,cell-6);
+    snake.forEach((s,i)=>{ctx.fillStyle=i===0?'#22c55e':'#16a34a'; ctx.fillRect(s.x*cell+2,s.y*cell+2,cell-4,cell-4);});
+  }
+
+  function drawPacman(){
+    // pellets
+    ctx.fillStyle='#f8fafc';
+    pellets.forEach(pk=>{const [x,y]=pk.split(',').map(Number); ctx.fillRect(x*cell+cell*0.42,y*cell+cell*0.42,cell*0.16,cell*0.16);});
+    // ghosts
+    ghosts.forEach(g=>{ctx.fillStyle='#ef4444'; ctx.fillRect(g.x*cell+3,g.y*cell+3,cell-6,cell-6);});
+    // pacman
+    ctx.fillStyle='#facc15';
+    const cx=pac.x*cell+cell/2, cy=pac.y*cell+cell/2, r=cell*0.42;
+    let ang=0;
+    if(dir.x===1) ang=0; else if(dir.x===-1) ang=Math.PI; else if(dir.y===1) ang=Math.PI/2; else ang=-Math.PI/2;
+    ctx.beginPath();
+    ctx.moveTo(cx,cy);
+    ctx.arc(cx,cy,r,ang+0.35,ang-0.35,false);
+    ctx.closePath();
+    ctx.fill();
+  }
+
+  function loop(ts){
+    const dt=(ts-last)/1000||0; last=ts; acc+=dt;
+    const stepTime=1/fps;
+    while(acc>=stepTime){ if(mode==='snake') stepSnake(); else stepPacman(); acc-=stepTime; }
+    drawGrid();
+    if(mode==='snake') drawSnake(); else drawPacman();
+    requestAnimationFrame(loop);
+  }
+
+  function bindBtn(el,fn){
+    const fire=(e)=>{if(e)e.preventDefault(); fn();};
+    el.addEventListener('click',fire); el.addEventListener('touchstart',fire,{passive:false}); el.addEventListener('pointerdown',fire);
+  }
+
+  bindBtn(leftBtn, rotateLeft);
+  bindBtn(rightBtn, rotateRight);
+  restartBtn.addEventListener('click', reset);
+  gameSelect.addEventListener('change', ()=>{ mode=gameSelect.value; reset(); });
+
+  window.addEventListener('keydown',(e)=>{
+    const k=e.key.toLowerCase();
+    if(k==='arrowleft' || k==='a') rotateLeft();
+    if(k==='arrowright' || k==='d') rotateRight();
+  });
+
+  reset();
+  requestAnimationFrame(loop);
+})();
+</script>
+</body>
+</html>
