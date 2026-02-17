@@ -73,9 +73,10 @@
   let snake=[], food={x:5,y:5};
 
   // pacman state
-  let pac={x:10,y:10};
+  let pac={x:10,y:15};
   let ghosts=[];
   let pellets=new Set();
+  let maze=[];
 
   function key(x,y){return `${x},${y}`}
 
@@ -96,11 +97,50 @@
     }
   }
 
+  function buildMaze(){
+    // 21x21 compact maze (1=wall,0=path)
+    const rows = [
+      '111111111111111111111',
+      '100000000010000000001',
+      '101111011010110111101',
+      '101000010000010000101',
+      '101011111011111110101',
+      '101010000000000010101',
+      '101010111111111010101',
+      '100010100000001010001',
+      '111010101111101010111',
+      '100000101000101000001',
+      '101111101000101111101',
+      '100000001000100000001',
+      '111011111010111110111',
+      '100010000000000010001',
+      '101110111111111011101',
+      '101000100000001000101',
+      '101011101111101110101',
+      '101000001000100000101',
+      '101111111010111111101',
+      '100000000000000000001',
+      '111111111111111111111'
+    ];
+    maze = rows.map(r => r.split('').map(c => c === '1' ? 1 : 0));
+  }
+
+  function isWall(x,y){
+    x = (x + size) % size;
+    y = (y + size) % size;
+    return maze[y]?.[x] === 1;
+  }
+
   function resetPacman(){
-    pac={x:10,y:10}; dir={x:1,y:0}; nextDir={x:1,y:0}; dead=false; score=0;
-    ghosts=[{x:4,y:4},{x:16,y:4},{x:4,y:16}];
+    buildMaze();
+    pac={x:1,y:1}; dir={x:1,y:0}; nextDir={x:1,y:0}; dead=false; score=0;
+    ghosts=[{x:19,y:1},{x:19,y:19},{x:1,y:19}];
     pellets.clear();
-    for(let y=1;y<size-1;y++) for(let x=1;x<size-1;x++) pellets.add(key(x,y));
+    for(let y=0;y<size;y++){
+      for(let x=0;x<size;x++){
+        if(!isWall(x,y)) pellets.add(key(x,y));
+      }
+    }
     pellets.delete(key(pac.x,pac.y));
   }
 
@@ -127,18 +167,26 @@
 
   function stepPacman(){
     if(dead) return;
-    dir=nextDir;
-    pac.x=(pac.x+dir.x+size)%size;
-    pac.y=(pac.y+dir.y+size)%size;
+
+    // Try to turn first; if blocked keep previous direction
+    const tryX = (pac.x + nextDir.x + size) % size;
+    const tryY = (pac.y + nextDir.y + size) % size;
+    if(!isWall(tryX, tryY)) dir = nextDir;
+
+    const nx=(pac.x+dir.x+size)%size;
+    const ny=(pac.y+dir.y+size)%size;
+    if(!isWall(nx, ny)) { pac.x = nx; pac.y = ny; }
 
     const k=key(pac.x,pac.y);
     if(pellets.has(k)){ pellets.delete(k); score++; }
 
-    // simple ghost movement
+    // Ghosts move through legal corridors only
     ghosts=ghosts.map(g=>{
-      const choices=[[1,0],[-1,0],[0,1],[0,-1]];
-      const [dx,dy]=choices[Math.floor(Math.random()*choices.length)];
-      return {x:(g.x+dx+size)%size,y:(g.y+dy+size)%size};
+      const options=[[1,0],[-1,0],[0,1],[0,-1]]
+        .map(([dx,dy])=>({x:(g.x+dx+size)%size,y:(g.y+dy+size)%size}))
+        .filter(p=>!isWall(p.x,p.y));
+      if(options.length===0) return g;
+      return options[Math.floor(Math.random()*options.length)];
     });
 
     if(ghosts.some(g=>g.x===pac.x&&g.y===pac.y)) return die();
@@ -160,6 +208,15 @@
   }
 
   function drawPacman(){
+    // maze walls
+    for(let y=0;y<size;y++){
+      for(let x=0;x<size;x++){
+        if(isWall(x,y)){
+          ctx.fillStyle='#1d4ed8';
+          ctx.fillRect(x*cell+1,y*cell+1,cell-2,cell-2);
+        }
+      }
+    }
     // pellets
     ctx.fillStyle='#f8fafc';
     pellets.forEach(pk=>{const [x,y]=pk.split(',').map(Number); ctx.fillRect(x*cell+cell*0.42,y*cell+cell*0.42,cell*0.16,cell*0.16);});
