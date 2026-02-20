@@ -24,7 +24,7 @@
     .btn.secondary{background:#1f2f57;color:#dbe8ff;border:1px solid #2d477d}
     .btn.ok{background:var(--ok);color:#052013}
     .row{display:flex;justify-content:space-between;align-items:center;gap:8px}
-    .kpi{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin:14px 0}
+    .kpi{display:grid;grid-template-columns:repeat(6,1fr);gap:10px;margin:14px 0}
     .k{background:#101a34;border:1px solid #24375f;border-radius:12px;padding:10px}
     .k b{font-size:20px}
     .note{font-size:12px;color:var(--muted)}
@@ -92,14 +92,14 @@
 
 <script>
 let templates=[
- {id:1,name:'Founder KPI Dashboard',category:'Notion',use:'Founders',price:49,rating:4.8},
- {id:2,name:'SaaS Financial Model (3-Statement)',category:'Sheets',use:'Finance',price:79,rating:4.9},
- {id:3,name:'Cold Outreach CRM Pipeline',category:'Airtable',use:'Sales',price:39,rating:4.6},
- {id:4,name:'Weekly Ops Review Pack',category:'Slides',use:'Operations',price:29,rating:4.5},
- {id:5,name:'Agency P&L + Capacity Planner',category:'Sheets',use:'Finance',price:69,rating:4.7},
- {id:6,name:'Hiring Scorecard Kit',category:'Notion',use:'Operations',price:25,rating:4.4},
- {id:7,name:'B2B Demo Call Script + Objections',category:'Docs',use:'Sales',price:19,rating:4.3},
- {id:8,name:'Board Update One-Pager',category:'Slides',use:'Founders',price:35,rating:4.7}
+ {id:1,name:'Founder KPI Dashboard',category:'Notion',use:'Founders',price:49,rating:4.8,q:86},
+ {id:2,name:'SaaS Financial Model (3-Statement)',category:'Sheets',use:'Finance',price:79,rating:4.9,q:91},
+ {id:3,name:'Cold Outreach CRM Pipeline',category:'Airtable',use:'Sales',price:39,rating:4.6,q:84},
+ {id:4,name:'Weekly Ops Review Pack',category:'Slides',use:'Operations',price:29,rating:4.5,q:80},
+ {id:5,name:'Agency P&L + Capacity Planner',category:'Sheets',use:'Finance',price:69,rating:4.7,q:88},
+ {id:6,name:'Hiring Scorecard Kit',category:'Notion',use:'Operations',price:25,rating:4.4,q:76},
+ {id:7,name:'B2B Demo Call Script + Objections',category:'Docs',use:'Sales',price:19,rating:4.3,q:72},
+ {id:8,name:'Board Update One-Pager',category:'Slides',use:'Founders',price:35,rating:4.7,q:78}
 ];
 
 const state={cart:[],drafts:[],events:JSON.parse(localStorage.getItem('th2_events')||'[]'),startedAt:Date.now(),session:crypto.randomUUID().slice(0,8)};
@@ -110,12 +110,27 @@ function filtered(){const s=el('search').value.toLowerCase(),c=el('category').va
 function renderCards(){const list=filtered();el('resultCount').textContent=`${list.length} templates`;el('cards').innerHTML=list.map(t=>`<div class="card"><div class="badge">${t.category}</div><h3>${t.name}</h3><div class="muted">Use case: ${t.use} • ⭐ ${t.rating}</div><div class="price">$${t.price}</div><button class="btn" onclick="addToCart(${t.id})">Add to cart</button></div>`).join('')||'<div class="muted">No templates match filters.</div>'}
 function addToCart(id){if(!state.cart.includes(id)){state.cart.push(id);track('add_to_cart',{id});renderCart();}}
 function renderCart(){const items=state.cart.map(id=>byId(id));el('cartCount').textContent=`${items.length} items`;el('cartItems').innerHTML=items.length?items.map(i=>`• ${i.name} — $${i.price}`).join('<br>'):'No items yet';el('total').textContent='$'+items.reduce((a,b)=>a+b.price,0)}
-function renderKpis(){const e=state.events;const views=e.filter(x=>x.type==='view').length,adds=e.filter(x=>x.type==='add_to_cart').length,co=e.filter(x=>x.type==='checkout').length,gens=e.filter(x=>x.type==='generate').length,pubs=e.filter(x=>x.type==='publish').length;el('kpis').innerHTML=`<div class='k'><div class='muted'>Views</div><b>${views}</b></div><div class='k'><div class='muted'>Adds</div><b>${adds}</b></div><div class='k'><div class='muted'>Checkouts</div><b>${co}</b></div><div class='k'><div class='muted'>Drafts generated</div><b>${gens}</b></div><div class='k'><div class='muted'>Drafts published</div><b>${pubs}</b></div>`}
+function renderKpis(){const e=state.events;const views=e.filter(x=>x.type==='view').length,adds=e.filter(x=>x.type==='add_to_cart').length,co=e.filter(x=>x.type==='checkout').length,gens=e.filter(x=>x.type==='generate').length,pubs=e.filter(x=>x.type==='publish').length;const qVals=templates.filter(t=>typeof t.q==='number').map(t=>t.q);const avgQ=qVals.length?(qVals.reduce((a,b)=>a+b,0)/qVals.length).toFixed(1):'--';el('kpis').innerHTML=`<div class='k'><div class='muted'>Views</div><b>${views}</b></div><div class='k'><div class='muted'>Adds</div><b>${adds}</b></div><div class='k'><div class='muted'>Checkouts</div><b>${co}</b></div><div class='k'><div class='muted'>Drafts generated</div><b>${gens}</b></div><div class='k'><div class='muted'>Drafts published</div><b>${pubs}</b></div><div class='k'><div class='muted'>Avg quality</div><b>${avgQ}</b></div>`}
 
+
+function qualityScore(name, kw, aud, cat, price){
+  let score=50;
+  const n=name.toLowerCase(), k=kw.toLowerCase();
+  if(n.includes(k.split(' ')[0])) score+=12;
+  if(/dashboard|tracker|model|kit|template|planner/.test(n)) score+=10;
+  if(aud==='Finance' && /model|financial|runway|p&l|cash/.test(n)) score+=10;
+  if(aud==='Sales' && /pipeline|outreach|crm|revenue/.test(n)) score+=10;
+  if(aud==='Founders' && /kpi|board|operating|strategy/.test(n)) score+=10;
+  if(aud==='Operations' && /ops|workflow|review|scorecard/.test(n)) score+=10;
+  if(price>=19 && price<=89) score+=8;
+  if(['Notion','Sheets','Slides','Docs','Airtable'].includes(cat)) score+=5;
+  return Math.max(1,Math.min(100,score));
+}
 function suggestionPrice(aud,cat){const base={Founders:39,Finance:59,Sales:29,Operations:35}[aud]||39;const bump={Notion:0,Sheets:20,Slides:-5,Docs:-10,Airtable:10}[cat]||0;return Math.max(19,base+bump)}
 function titleFromKeyword(kw,aud){const x=kw.trim().replace(/\b\w/g,m=>m.toUpperCase());const suffix={Founders:'Operating System',Finance:'Financial Toolkit',Sales:'Revenue Engine',Operations:'Ops Command Center'}[aud]||'Template Kit';return `${x} ${suffix}`}
-function generateDrafts(){const kw=el('kw').value.trim()||'growth dashboard';const aud=el('aud').value;const cat=el('catGen').value;const n=Math.max(1,Math.min(5,parseInt(el('batch').value||'2')));state.drafts=[];for(let i=0;i<n;i++){const variant=i+1;const name=titleFromKeyword(kw,aud)+(n>1?` v${variant}`:'');const price=suggestionPrice(aud,cat)+(i*5);state.drafts.push({name,category:cat,use:aud,price,rating:4.4});}
- el('out').textContent=state.drafts.map((d,i)=>`${i+1}. ${d.name}\n   Category: ${d.category} | Use case: ${d.use} | Price: $${d.price}`).join('\n\n');track('generate',{count:state.drafts.length,kw});}
+function generateDrafts(){const kw=el('kw').value.trim()||'growth dashboard';const aud=el('aud').value;const cat=el('catGen').value;const n=Math.max(1,Math.min(5,parseInt(el('batch').value||'2')));state.drafts=[];for(let i=0;i<n;i++){const variant=i+1;const name=titleFromKeyword(kw,aud)+(n>1?` v${variant}`:'');const price=suggestionPrice(aud,cat)+(i*5);const q=qualityScore(name,kw,aud,cat,price);state.drafts.push({name,category:cat,use:aud,price,rating:4.4,q});}
+ el('out').textContent=state.drafts.map((d,i)=>`${i+1}. ${d.name}\n   Category: ${d.category} | Use case: ${d.use} | Price: $${d.price} | Quality: ${d.q}/100`).join('\n\n');track('generate',{count:state.drafts.length,kw,avgQuality:(state.drafts.reduce((a,b)=>a+b.q,0)/state.drafts.length).toFixed(1)});}
+
 function publishDrafts(){if(!state.drafts.length){alert('Generate drafts first.');return;}let maxId=Math.max(...templates.map(t=>t.id));state.drafts.forEach(d=>templates.push({...d,id:++maxId}));track('publish',{count:state.drafts.length});state.drafts=[];el('out').textContent='Published to catalog ✅';refreshCategorySelect();renderCards();}
 function refreshCategorySelect(){const cur=el('category').value;el('category').innerHTML='<option value="all">All</option>';categories().forEach(c=>{const o=document.createElement('option');o.value=c;o.textContent=c;el('category').appendChild(o)});el('category').value=categories().includes(cur)?cur:'all';}
 
