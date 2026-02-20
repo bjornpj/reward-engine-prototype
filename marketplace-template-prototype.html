@@ -1,0 +1,144 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Template Marketplace Prototype</title>
+  <style>
+    :root{--bg:#0b1020;--card:#121a31;--muted:#9fb0d0;--text:#e9eefb;--acc:#6ea8fe;--ok:#34d399}
+    *{box-sizing:border-box} body{margin:0;font-family:Inter,system-ui,Arial;background:linear-gradient(160deg,#0a1022,#111b33);color:var(--text)}
+    .wrap{max-width:1100px;margin:0 auto;padding:24px}
+    .top{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+    h1{font-size:28px;margin:0} .muted{color:var(--muted)}
+    .pill{background:#1a2748;border:1px solid #28406f;padding:8px 12px;border-radius:999px;font-size:12px}
+    .grid{display:grid;grid-template-columns:260px 1fr;gap:16px;margin-top:18px}
+    .panel,.card{background:var(--card);border:1px solid #223054;border-radius:14px}
+    .panel{padding:14px;position:sticky;top:12px;height:max-content}
+    .filters label{display:block;margin:10px 0 6px;color:var(--muted);font-size:13px}
+    select,input[type="range"],input[type="search"]{width:100%;padding:10px;border-radius:10px;border:1px solid #2d3f68;background:#0f1730;color:var(--text)}
+    .cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:14px}
+    .card{padding:14px}
+    .badge{font-size:12px;background:#21325a;border:1px solid #2f4c88;border-radius:999px;padding:4px 8px;display:inline-block}
+    .price{font-size:20px;font-weight:700;margin:6px 0}
+    .btn{border:0;border-radius:10px;padding:10px 12px;background:var(--acc);color:#051021;font-weight:700;cursor:pointer}
+    .btn.secondary{background:#1f2f57;color:#dbe8ff;border:1px solid #2d477d}
+    .row{display:flex;justify-content:space-between;align-items:center;gap:8px}
+    .kpi{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:14px 0}
+    .k{background:#101a34;border:1px solid #24375f;border-radius:12px;padding:10px}
+    .k b{font-size:20px}
+    .checkout{margin-top:16px;padding:14px}
+    .note{font-size:12px;color:var(--muted)}
+    @media(max-width:900px){.grid{grid-template-columns:1fr}.panel{position:static}.kpi{grid-template-columns:repeat(2,1fr)}}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="top">
+      <div>
+        <h1>TemplateHub <span class="muted">Prototype</span></h1>
+        <div class="muted">Usability test: can users find, evaluate, and “buy” a template in under 90s?</div>
+      </div>
+      <div class="pill" id="session"></div>
+    </div>
+
+    <div class="kpi" id="kpis"></div>
+
+    <div class="grid">
+      <aside class="panel filters">
+        <h3>Filters</h3>
+        <label>Search</label>
+        <input type="search" id="search" placeholder="e.g., KPI dashboard"/>
+        <label>Category</label>
+        <select id="category"><option value="all">All</option></select>
+        <label>Price cap: <span id="priceCapLbl">$200</span></label>
+        <input type="range" id="priceCap" min="20" max="200" value="200" step="5"/>
+        <label>Use case</label>
+        <select id="usecase">
+          <option value="all">All</option>
+          <option>Sales</option><option>Finance</option><option>Operations</option><option>Founders</option>
+        </select>
+        <div style="margin-top:12px" class="note">Test tasks: 1) Find a finance template under $80. 2) Add to cart. 3) Checkout.</div>
+      </aside>
+
+      <main>
+        <div class="row" style="margin-bottom:10px">
+          <b id="resultCount">0 templates</b>
+          <button class="btn secondary" id="reset">Reset test data</button>
+        </div>
+        <div class="cards" id="cards"></div>
+
+        <div class="panel checkout">
+          <div class="row"><h3 style="margin:0">Checkout</h3><span id="cartCount" class="badge">0 items</span></div>
+          <div id="cartItems" class="muted" style="margin:8px 0">No items yet</div>
+          <div class="row">
+            <b>Total: <span id="total">$0</span></b>
+            <button class="btn" id="checkoutBtn">Simulate Purchase</button>
+          </div>
+          <p class="note">Prototype only — no payment processing.</p>
+        </div>
+      </main>
+    </div>
+  </div>
+
+<script>
+const templates=[
+ {id:1,name:'Founder KPI Dashboard',category:'Notion',use:'Founders',price:49,rating:4.8},
+ {id:2,name:'SaaS Financial Model (3-Statement)',category:'Sheets',use:'Finance',price:79,rating:4.9},
+ {id:3,name:'Cold Outreach CRM Pipeline',category:'Airtable',use:'Sales',price:39,rating:4.6},
+ {id:4,name:'Weekly Ops Review Pack',category:'Slides',use:'Operations',price:29,rating:4.5},
+ {id:5,name:'Agency P&L + Capacity Planner',category:'Sheets',use:'Finance',price:69,rating:4.7},
+ {id:6,name:'Hiring Scorecard Kit',category:'Notion',use:'Operations',price:25,rating:4.4},
+ {id:7,name:'B2B Demo Call Script + Objections',category:'Docs',use:'Sales',price:19,rating:4.3},
+ {id:8,name:'Board Update One-Pager',category:'Slides',use:'Founders',price:35,rating:4.7}
+];
+const state={cart:[],events:JSON.parse(localStorage.getItem('th_events')||'[]'),startedAt:Date.now(),session:crypto.randomUUID().slice(0,8)};
+const byId=id=>templates.find(t=>t.id===id);
+const el=id=>document.getElementById(id);
+
+function track(type,data={}){state.events.push({t:new Date().toISOString(),type,...data});localStorage.setItem('th_events',JSON.stringify(state.events));renderKpis();}
+function categories(){return [...new Set(templates.map(t=>t.category))];}
+function filtered(){
+ const s=el('search').value.toLowerCase();
+ const c=el('category').value; const u=el('usecase').value; const p=+el('priceCap').value;
+ return templates.filter(t=>(c==='all'||t.category===c)&&(u==='all'||t.use===u)&&t.price<=p&&(t.name.toLowerCase().includes(s)||t.use.toLowerCase().includes(s)));
+}
+function addToCart(id){if(!state.cart.includes(id)){state.cart.push(id);track('add_to_cart',{id});renderCart();}}
+function renderCards(){
+ const list=filtered();
+ el('resultCount').textContent=`${list.length} templates`;
+ el('cards').innerHTML=list.map(t=>`<div class="card"><div class="badge">${t.category}</div><h3>${t.name}</h3><div class="muted">Use case: ${t.use} • ⭐ ${t.rating}</div><div class="price">$${t.price}</div><button class="btn" onclick="addToCart(${t.id})">Add to cart</button></div>`).join('')||'<div class="muted">No templates match filters.</div>';
+}
+function renderCart(){
+ const items=state.cart.map(id=>byId(id));
+ el('cartCount').textContent=`${items.length} items`;
+ el('cartItems').innerHTML=items.length?items.map(i=>`• ${i.name} — $${i.price}`).join('<br>'):'No items yet';
+ el('total').textContent='$'+items.reduce((a,b)=>a+b.price,0);
+}
+function renderKpis(){
+ const views=state.events.filter(e=>e.type==='view').length;
+ const adds=state.events.filter(e=>e.type==='add_to_cart').length;
+ const checkouts=state.events.filter(e=>e.type==='checkout').length;
+ const dur=Math.round((Date.now()-state.startedAt)/1000);
+ el('kpis').innerHTML=`
+  <div class='k'><div class='muted'>Views</div><b>${views}</b></div>
+  <div class='k'><div class='muted'>Adds</div><b>${adds}</b></div>
+  <div class='k'><div class='muted'>Checkouts</div><b>${checkouts}</b></div>
+  <div class='k'><div class='muted'>Session sec</div><b>${dur}</b></div>`;
+}
+
+el('priceCap').addEventListener('input',e=>{el('priceCapLbl').textContent='$'+e.target.value;track('filter_price',{v:e.target.value});renderCards();});
+['search','category','usecase'].forEach(id=>el(id).addEventListener('input',()=>{track('filter_change',{id});renderCards();}));
+el('checkoutBtn').addEventListener('click',()=>{track('checkout',{items:state.cart.length,total:state.cart.map(i=>byId(i).price).reduce((a,b)=>a+b,0)});alert('Purchase simulated. Thank you!');});
+el('reset').addEventListener('click',()=>{localStorage.removeItem('th_events');state.events=[];state.cart=[];state.startedAt=Date.now();track('view',{reset:true});renderCards();renderCart();});
+
+function init(){
+ el('session').textContent='Session '+state.session;
+ categories().forEach(c=>{const o=document.createElement('option');o.value=c;o.textContent=c;el('category').appendChild(o);});
+ track('view');
+ renderCards(); renderCart(); renderKpis();
+ setInterval(renderKpis,1000);
+}
+init();
+</script>
+</body>
+</html>
